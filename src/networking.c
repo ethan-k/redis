@@ -1290,6 +1290,10 @@ int processMultibulkBuffer(client *c) {
  * pending query buffer, already representing a full command, to process. */
 void processInputBuffer(client *c) {
     server.current_client = c;
+    mstime_t latency;
+    latencyStartMonitor(latency);
+    int processed = 0;
+
     /* Keep processing while there is something in the input buffer */
     while(sdslen(c->querybuf)) {
         /* Return if clients are paused. */
@@ -1328,6 +1332,7 @@ void processInputBuffer(client *c) {
         } else {
             /* Only reset the client when the command was executed. */
             if (processCommand(c) == C_OK) {
+                processed++;
                 if (c->flags & CLIENT_MASTER && !(c->flags & CLIENT_MULTI)) {
                     /* Update the applied replication offset of our master. */
                     c->reploff = c->read_reploff - sdslen(c->querybuf);
@@ -1347,6 +1352,9 @@ void processInputBuffer(client *c) {
         }
     }
     server.current_client = NULL;
+
+    latencyEndMonitor(latency);
+    if (processed > 1) latencyAddSampleIfNeeded("pipeline",latency);
 }
 
 void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mask) {

@@ -3482,6 +3482,7 @@ void moduleBlockedClientTimedOut(client *c) {
     ctx.module = bc->module;
     ctx.client = bc->client;
     bc->timeout_callback(&ctx,(void**)c->argv,c->argc);
+    moduleHandlePropagationAfterCommandCallback(&ctx);
     moduleFreeContext(&ctx);
 }
 

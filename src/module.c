@@ -3314,6 +3314,13 @@ void unblockClientFromModule(client *c) {
     resetClient(c);
 }
 
+/* The default timeout callback for blocked module client. */
+int moduleBlockedClientDefaultTimeout(RedisModuleCtx *ctx, void **argv, int argc) {
+    UNUSED(argv);
+    UNUSED(argc);
+    return RM_ReplyWithError(ctx, "ERR blocked module command timed out, but timeout callback is NULL");
+}
+
 /* Block a client in the context of a blocking command, returning an handle
  * which will be used, later, in order to unblock the client with a call to
  * RedisModule_UnblockClient(). The arguments specify callback functions
@@ -3343,7 +3350,7 @@ RedisModuleBlockedClient *RM_BlockClient(RedisModuleCtx *ctx, RedisModuleCmdFunc
     bc->client = islua ? NULL : c;
     bc->module = ctx->module;
     bc->reply_callback = reply_callback;
-    bc->timeout_callback = timeout_callback;
+    bc->timeout_callback = timeout_callback ? timeout_callback : moduleBlockedClientDefaultTimeout;
     bc->free_privdata = free_privdata;
     bc->privdata = NULL;
     bc->reply_client = createClient(-1);

@@ -330,6 +330,10 @@ void loadServerConfigFromString(char *config) {
             }
         } else if ((!strcasecmp(argv[0],"proto-max-bulk-len")) && argc == 2) {
             server.proto_max_bulk_len = memtoll(argv[1],NULL);
+            if (server.proto_max_bulk_len < CONFIG_DEFAULT_PROTO_MAX_BULK_LEN) {
+                err = "proto-max-bulk-len must be 512mb or greater";
+                goto loaderr;
+            }
         } else if ((!strcasecmp(argv[0],"client-query-buffer-limit")) && argc == 2) {
             server.client_max_querybuf_len = memtoll(argv[1],NULL);
         } else if (!strcasecmp(argv[0],"lfu-log-factor") && argc == 2) {
@@ -1137,7 +1141,9 @@ void configSetCommand(client *c) {
             freeMemoryIfNeeded();
         }
     } config_set_memory_field(
-      "proto-max-bulk-len",server.proto_max_bulk_len) {
+      "proto-max-bulk-len",ll) {
+        if (ll < CONFIG_DEFAULT_PROTO_MAX_BULK_LEN) goto badfmt;
+        server.proto_max_bulk_len = ll;
     } config_set_memory_field(
       "client-query-buffer-limit",server.client_max_querybuf_len) {
     } config_set_memory_field("repl-backlog-size",ll) {
